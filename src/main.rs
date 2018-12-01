@@ -8,6 +8,7 @@ use amethyst::{
     renderer::*,
     ecs::prelude::*,
     core::{TransformBundle, transform::Transform},
+    input::InputBundle,
     core::nalgebra::{Vector3, Vector2},
     assets::{AssetStorage, Loader},
     utils::{application_root_dir, ortho_camera::*},
@@ -37,16 +38,21 @@ fn main() -> amethyst::Result<()> {
             .with_pass(DrawFlat2D::new())
     );
 
+    let binding_path = "./resources/bindings_config.ron";
+    let input_bundle = InputBundle::<String, String>::new()
+        .with_bindings_from_file(binding_path)?;
+
     let game_data =
         GameDataBuilder::default()
         .with_bundle(TransformBundle::new())?
+        .with_bundle(input_bundle)?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with(CameraOrthoSystem::default(), "letterbox", &[])
         .with(systems::player::PlayerSystem, "player", &["input_system"])
         ;
 
     let args: Vec<String> = std::env::args().collect();
-    let is_server = args[1] == "server";
+    let is_server = if args.len() > 1 { args[1] == "server" } else { false };
     // Bind to the correct port
     let game_data = if is_server {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
