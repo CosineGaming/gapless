@@ -1,11 +1,11 @@
 use amethyst::{
     ecs::{Join, ReaderId, System, ReadStorage, WriteStorage},
     network::*,
-    core::cgmath::{Vector3},
+    core::nalgebra::{Vector3},
     core::Transform,
 };
 
-use game::{Paddle, Ball, UpdateEvent, Side, ARENA_WIDTH};
+use {Player, UpdateEvent, ServerEvent};
 
 /// A simple system that receives a ton of network events.
 pub struct ReceiveSystem {
@@ -22,18 +22,22 @@ impl<'a> System<'a> for ReceiveSystem {
     type SystemData = (
         WriteStorage<'a, NetConnection<UpdateEvent>>,
         WriteStorage<'a, Transform>,
-        ReadStorage<'a, Paddle>,
-        WriteStorage<'a, Ball>,
+        ReadStorage<'a, Player>,
     );
-    fn run(&mut self, (mut connections, mut transforms, paddles, mut balls): Self::SystemData) {
+    fn run(&mut self, (mut connections, mut transforms, players): Self::SystemData) {
         for (mut conn,) in (&mut connections,).join() {
             if self.reader.is_none() {
                 self.reader = Some(conn.receive_buffer.register_reader());
             }
             let mut iter = conn.receive_buffer.read(self.reader.as_mut().unwrap())
                 .filter_map(|ev| {
+                    // TODO: match
                     if let NetEvent::Custom(event) = ev {
-                        Some(event)
+                        if let UpdateEvent::Server(server_event) = event {
+                            Some(server_event)
+                        } else {
+                            None
+                        }
                     } else {
                         None
                     }
@@ -42,16 +46,10 @@ impl<'a> System<'a> for ReceiveSystem {
                 let recent = iter.fold(first, |acc, ev| {
                     if acc.frame > ev.frame { acc } else { ev }
                 });
-                for (paddle, mut transform) in (&paddles, &mut transforms).join() {
-                    if paddle.side == Side::Right {
-                        transform.translation[1] = recent.paddle.vertical;
-                    }
-                }
-                for (mut ball, mut transform) in (&mut balls, &mut transforms).join() {
-                    for ball_event in &recent.balls {
-                        // The stage is flipped from the other
-                        ball.velocity = [-ball_event.velocity[0], ball_event.velocity[1]];
-                        transform.translation = Vector3::new(ARENA_WIDTH - ball_event.position.x, ball_event.position.y, 0.0);
+                for (player, mut transform) in (&players, &mut transforms).join() {
+                    if let Some(tf) = recent.tfs.get(&player.id) {
+                        let pos = tf.position;
+                        transform.set_xyz(pos.x, pos.y, 0.0);
                     }
                 }
             }

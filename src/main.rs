@@ -15,6 +15,8 @@ use amethyst::{
     network::{NetConnection, NetworkBundle, NetEvent},
 };
 
+use std::collections::HashMap;
+
 mod states;
 mod systems;
 
@@ -35,7 +37,7 @@ fn main() -> amethyst::Result<()> {
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.00196, 0.23726, 0.21765, 1.0], 1.0)
-            .with_pass(DrawFlat2D::new())
+            .with_pass(DrawFlat2D::new()) // TODO: Add transparency pass
     );
 
     let binding_path = "./resources/bindings_config.ron";
@@ -59,14 +61,16 @@ fn main() -> amethyst::Result<()> {
                 "127.0.0.1:3456".parse().unwrap(),
                 vec![],
             ))?
+            .with(systems::server_update::ServerUpdate, "server_update", &["player"])
     } else {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
                 "127.0.0.1:3455".parse().unwrap(),
                 vec![],
             ))?
+            .with(systems::receive::ReceiveSystem::new(), "receive", &[])
     };
 
-    let mut game = Application::build("./", states::menu::Menu)?
+    let mut game = Application::build("./", states::level_0::Level0)?
         .with_resource(NetParams {
             is_server: is_server,
             id: 0, // TODO: Use IP or somethivgn
@@ -139,6 +143,7 @@ fn init_player(world: &mut World, texture: &TextureHandle) -> Entity {
     transform.set_x(GAME_WIDTH/2.0);
     transform.set_y(GAME_HEIGHT/2.0);
     world.create_entity()
+        .with(Player::new(0)) // TODO: id
         .with(transform)
         .with(texture.clone())
         .build()
@@ -168,11 +173,26 @@ pub struct NetParams {
     pub id: u32,
 }
 
+// Everything that could be sent is in this enum
+#[derive(PartialEq, Clone, Serialize, Deserialize)]
+pub enum UpdateEvent {
+    Server(ServerEvent),
+    Client(ClientEvent),
+}
+
 // Sent every frame by the server to update on the state of the world
 #[derive(PartialEq, Clone, Serialize, Deserialize)]
-pub struct UpdateEvent {
+pub struct ServerEvent {
     pub frame: u64,
-    pub tfs: Vec<TFEvent>,
+    // u32 = net_id
+    pub tfs: HashMap<u32, TFEvent>,
+}
+
+// Sent every frame by the server to update on the state of the world
+#[derive(PartialEq, Clone, Serialize, Deserialize)]
+pub struct ClientEvent {
+    pub frame: u64,
+    pub tf: TFEvent,
 }
 
 #[derive(PartialEq, Clone, Serialize, Deserialize)]

@@ -1,5 +1,5 @@
 use amethyst::core::Transform;
-use amethyst::core::nalgebra::Vector2;
+use amethyst::core::nalgebra::Vector3;
 use amethyst::ecs::{Join, Read, ReadExpect, ReadStorage, System, WriteStorage};
 use amethyst::input::InputHandler;
 
@@ -19,8 +19,10 @@ impl<'s> System<'s> for PlayerSystem {
         for (player, transform) in (&players, &mut transforms).join() {
             // only move our own player
             if player.id == net_params.id {
-                let movement = Vector2::new(input.axis_value("horizontal").unwrap() as f32, input.axis_value("vertical").unwrap() as f32);
-                transform.set_xyz(movement.x, movement.y, 0.0);
+                let movement = Vector3::new(input.axis_value("horizontal").unwrap() as f32, input.axis_value("vertical").unwrap() as f32, 0.0);
+                let movement = movement * 2.0;
+                transform.move_global(movement);
+                // TODO: Framerate dependent????
                 // let scaled_amount = 1.2 * mv_amount as f32;
                 // transform.translation[1] = (transform.translation[1] + scaled_amount)
                 //     .min(GAME_HEIGHT) // get height and adjust for it
