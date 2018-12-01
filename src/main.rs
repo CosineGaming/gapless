@@ -6,6 +6,7 @@ extern crate serde;
 use amethyst::{
     prelude::*,
     renderer::*,
+    ecs::prelude::*,
     core::{TransformBundle, transform::Transform},
     core::nalgebra::{Vector3, Vector2},
     assets::{AssetStorage, Loader},
@@ -41,6 +42,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(TransformBundle::new())?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with(CameraOrthoSystem::default(), "letterbox", &[])
+        .with(systems::player::PlayerSystem, "player", &["input_system"])
         ;
 
     let args: Vec<String> = std::env::args().collect();
@@ -61,6 +63,7 @@ fn main() -> amethyst::Result<()> {
     let mut game = Application::build("./", states::menu::Menu)?
         .with_resource(NetParams {
             is_server: is_server,
+            id: 0, // TODO: Use IP or somethivgn
         })
         .build(game_data)?
         ;
@@ -115,9 +118,48 @@ fn init_net(world: &mut World) {
         .build();
 }
 
+fn init_image(world: &mut World, texture: &TextureHandle) -> Entity {
+    let mut transform = Transform::default();
+    transform.set_x(GAME_WIDTH/2.0);
+    transform.set_y(GAME_HEIGHT/2.0);
+    world.create_entity()
+        .with(transform)
+        .with(texture.clone())
+        .build()
+}
+
+fn init_player(world: &mut World, texture: &TextureHandle) -> Entity {
+    let mut transform = Transform::default();
+    transform.set_x(GAME_WIDTH/2.0);
+    transform.set_y(GAME_HEIGHT/2.0);
+    world.create_entity()
+        .with(transform)
+        .with(texture.clone())
+        .build()
+}
+
+pub struct Player {
+    pub id: u32,
+}
+
+impl Player {
+    fn new(id: u32) -> Self {
+        Player {
+            id: id
+        }
+    }
+}
+
+impl Component for Player {
+    type Storage = DenseVecStorage<Self>;
+}
+
 // This should probly be in different file but
 pub struct NetParams {
     pub is_server: bool,
+    // TODO: How do we turn IP to a u32?
+    // a net id
+    pub id: u32,
 }
 
 // Sent every frame by the server to update on the state of the world
