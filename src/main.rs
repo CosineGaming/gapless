@@ -41,7 +41,7 @@ fn main() -> amethyst::Result<()> {
     );
 
     let binding_path = "./resources/bindings_config.ron";
-    let input_bundle = InputBundle::<String, String>::new()
+    let input_bundle = InputBundle::<String, String>::new() // TODO: change actions to a u8 and use that??
         .with_bindings_from_file(binding_path)?;
 
     let game_data =
@@ -50,7 +50,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(input_bundle)?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with(CameraOrthoSystem::default(), "letterbox", &[])
-        .with(systems::player::PlayerSystem, "player", &["input_system"])
+        .with(systems::player::PlayerSystem::new(), "player", &["input_system"])
         ;
 
     let args: Vec<String> = std::env::args().collect();
@@ -62,12 +62,14 @@ fn main() -> amethyst::Result<()> {
                 vec![],
             ))?
             .with(systems::server_update::ServerUpdate, "server_update", &["player"])
+            .with(systems::server_receive::ServerReceive::new(), "server_receive", &["player"])
     } else {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
                 "127.0.0.1:3455".parse().unwrap(),
                 vec![],
             ))?
-            .with(systems::receive::ReceiveSystem::new(), "receive", &[])
+            .with(systems::client_update::ClientUpdate, "client_update", &[])
+            .with(systems::client_receive::ClientReceive::new(), "client_receive", &[])
     };
 
     let mut game = Application::build("./", states::level_0::Level0)?
@@ -192,7 +194,11 @@ pub struct ServerEvent {
 #[derive(PartialEq, Clone, Serialize, Deserialize)]
 pub struct ClientEvent {
     pub frame: u64,
-    pub tf: TFEvent,
+    pub id: u32,
+    pub left: bool,
+    pub right: bool,
+    pub up: bool,
+    pub down: bool,
 }
 
 #[derive(PartialEq, Clone, Serialize, Deserialize)]

@@ -8,17 +8,17 @@ use amethyst::{
 use {Player, UpdateEvent, ServerEvent};
 
 /// A simple system that receives a ton of network events.
-pub struct ReceiveSystem {
+pub struct ClientReceive {
     pub reader: Option<ReaderId<NetEvent<UpdateEvent>>>,
 }
 
-impl ReceiveSystem {
+impl ClientReceive {
     pub fn new() -> Self {
-        ReceiveSystem { reader: None }
+        ClientReceive { reader: None }
     }
 }
 
-impl<'a> System<'a> for ReceiveSystem {
+impl<'a> System<'a> for ClientReceive {
     type SystemData = (
         WriteStorage<'a, NetConnection<UpdateEvent>>,
         WriteStorage<'a, Transform>,
