@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = []
 
 [dependencies]
-amethyst = {git = "https://github.com/amethyst/amethyst", features = ["nightly"]}
+amethyst = { path = "src/amethyst" }
+# amethyst = {git = "https://github.com/amethyst/amethyst", features = ["nightly"]}
 serde_derive = "1.0"
 serde = "1.0"
 

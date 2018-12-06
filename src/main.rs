@@ -26,7 +26,12 @@ pub const GAME_WIDTH: f32 = 320.0;
 pub const GAME_HEIGHT: f32 = 180.0;
 
 fn main() -> amethyst::Result<()> {
-    amethyst::start_logger(Default::default());
+    amethyst::start_logger(amethyst::LoggerConfig {
+        stdout: amethyst::StdoutLog::Colored,
+        level_filter: amethyst::LogLevelFilter::Warn,
+        log_file: None,
+        allow_env_override: true
+    });
 
     let path = format!(
         "{}/resources/display_config.ron",
@@ -36,7 +41,7 @@ fn main() -> amethyst::Result<()> {
 
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
-            .clear_target([0.00196, 0.23726, 0.21765, 1.0], 1.0)
+            .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
             .with_pass(DrawFlat2D::new()) // TODO: Add transparency pass
     );
 
@@ -62,10 +67,11 @@ fn main() -> amethyst::Result<()> {
                 vec![],
             ))?
             .with(systems::server_update::ServerUpdate, "server_update", &["player"])
-            .with(systems::server_receive::ServerReceive::new(), "server_receive", &["player"])
+            .with(systems::server_receive::ServerReceive::new(), "server_receive", &["net_socket", "player"])
     } else {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
-                "127.0.0.1:3455".parse().unwrap(),
+                // "127.0.0.1:3455".parse().unwrap(),
+                "0.0.0.0:0".parse().unwrap(),
                 vec![],
             ))?
             .with(systems::client_update::ClientUpdate, "client_update", &[])
@@ -116,18 +122,13 @@ fn init_camera(world: &mut World) {
 }
 
 fn init_net(world: &mut World) {
-    let address = {
-        let net_params = world.read_resource::<NetParams>();
-        if net_params.is_server {
-            "127.0.0.1:3455"
-        } else {
-            "127.0.0.1:3456"
-        }.parse().unwrap()
-    };
-    world
-        .create_entity()
-        .with(NetConnection::<UpdateEvent>::new(address))
-        .build();
+    let net_params = world.read_resource::<NetParams>().clone();
+    if !net_params.is_server {
+        world
+            .create_entity()
+            .with(NetConnection::<UpdateEvent>::new("127.0.0.1:3456".parse().unwrap()))
+            .build();
+    }
 }
 
 fn init_image(world: &mut World, texture: &TextureHandle) -> Entity {
@@ -135,17 +136,6 @@ fn init_image(world: &mut World, texture: &TextureHandle) -> Entity {
     transform.set_x(GAME_WIDTH/2.0);
     transform.set_y(GAME_HEIGHT/2.0);
     world.create_entity()
-        .with(transform)
-        .with(texture.clone())
-        .build()
-}
-
-fn init_player(world: &mut World, texture: &TextureHandle) -> Entity {
-    let mut transform = Transform::default();
-    transform.set_x(GAME_WIDTH/2.0);
-    transform.set_y(GAME_HEIGHT/2.0);
-    world.create_entity()
-        .with(Player::new(0)) // TODO: id
         .with(transform)
         .with(texture.clone())
         .build()
@@ -168,6 +158,7 @@ impl Component for Player {
 }
 
 // This should probly be in different file but
+#[derive(Clone)]
 pub struct NetParams {
     pub is_server: bool,
     // TODO: How do we turn IP to a u32?
