@@ -23,7 +23,7 @@ impl<'a> System<'a> for ServerUpdate {
         let mut tf_events = HashMap::new();
         // TODO: Construct maps of id -> tf_event and have that be what we send
         for (player, transform) in (&players, &transforms).join() {
-            tf_events.insert(player.id, TFEvent {
+            tf_events.insert(player.is_server, TFEvent {
                 position: Vector2::new(transform.translation().x, transform.translation().y),
                 velocity: Vector2::new(0.0, 0.0), // TODO
             });

@@ -47,7 +47,7 @@ impl<'a> System<'a> for ClientReceive {
                     if acc.frame > ev.frame { acc } else { ev }
                 });
                 for (player, mut transform) in (&players, &mut transforms).join() {
-                    if let Some(tf) = recent.tfs.get(&player.id) {
+                    if let Some(tf) = recent.tfs.get(&player.is_server) {
                         let pos = tf.position;
                         transform.set_xyz(pos.x, pos.y, 0.0);
                     }

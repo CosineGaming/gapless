@@ -91,18 +91,6 @@ fn main() -> amethyst::Result<()> {
     Ok(())
 }
 
-fn load_texture(world: &mut World, png_path: &str) -> TextureHandle {
-    let loader = world.read_resource::<Loader>();
-    let texture_storage = world.read_resource::<AssetStorage<Texture>>();
-    loader.load(
-        format!("texture/{}", png_path),
-        PngFormat,
-        TextureMetadata::srgb_scale(),
-        (),
-        &texture_storage,
-    )
-}
-
 fn init_camera(world: &mut World) {
     let mut transform = Transform::default();
     transform.set_z(1.0);
@@ -141,14 +129,37 @@ fn init_image(world: &mut World, texture: &TextureHandle) -> Entity {
         .build()
 }
 
+fn load_texture(world: &mut World, png_path: &str) -> TextureHandle {
+    let loader = world.read_resource::<Loader>();
+    let texture_storage = world.read_resource::<AssetStorage<Texture>>();
+    loader.load(
+        format!("texture/{}", png_path),
+        PngFormat,
+        TextureMetadata::srgb_scale(),
+        (),
+        &texture_storage,
+    )
+}
+
+fn init_player(world: &mut World, texture: &TextureHandle, is_server: bool) -> Entity {
+    let mut transform = Transform::default();
+    transform.set_x(GAME_WIDTH/2.0);
+    transform.set_y(GAME_HEIGHT/2.0);
+    world.create_entity()
+        .with(Player::new(is_server)) // TODO: id
+        .with(transform)
+        .with(texture.clone())
+        .build()
+}
+
 pub struct Player {
-    pub id: u32,
+    pub is_server: bool,
 }
 
 impl Player {
-    fn new(id: u32) -> Self {
+    fn new(is_server: bool) -> Self {
         Player {
-            id: id
+            is_server // IS THIS POSSBLIE? LOLO
         }
     }
 }
