@@ -6,7 +6,7 @@ use amethyst::{
 };
 use std::collections::HashMap;
 
-use {UpdateEvent, ServerEvent, TFEvent, Player, NetParams};
+use {UpdateEvent, TFEvent, Player, NetParams};
 
 /// A simple system that sends a ton of messages to all connections.
 /// In this case, only the server is connected.
@@ -28,10 +28,10 @@ impl<'a> System<'a> for ServerUpdate {
                 velocity: Vector2::new(0.0, 0.0), // TODO
             });
         }
-        let update_event = NetEvent::Custom(UpdateEvent::Server(ServerEvent {
+        let update_event = NetEvent::Custom(UpdateEvent {
             frame: time.frame_number(),
             tfs: tf_events,
-        }));
+        });
         for mut conn in (&mut connections).join() {
             conn.send_buffer.single_write(update_event.clone());
         }

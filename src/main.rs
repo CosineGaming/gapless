@@ -56,6 +56,8 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with(CameraOrthoSystem::default(), "letterbox", &[])
         .with(systems::player::PlayerSystem::new(), "player", &["input_system"])
+        .with(systems::net_update::NetUpdate, "net_update", &[])
+        .with(systems::net_receive::NetReceive::new(), "net_receive", &["player"]) // TODO: do this after NetworkBundle
         ;
 
     let args: Vec<String> = std::env::args().collect();
@@ -66,22 +68,17 @@ fn main() -> amethyst::Result<()> {
                 "127.0.0.1:3456".parse().unwrap(),
                 vec![],
             ))?
-            .with(systems::server_update::ServerUpdate, "server_update", &["player"])
-            .with(systems::server_receive::ServerReceive::new(), "server_receive", &["net_socket", "player"])
     } else {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
                 // "127.0.0.1:3455".parse().unwrap(),
                 "0.0.0.0:0".parse().unwrap(),
                 vec![],
             ))?
-            .with(systems::client_update::ClientUpdate, "client_update", &[])
-            .with(systems::client_receive::ClientReceive::new(), "client_receive", &[])
     };
 
     let mut game = Application::build("./", states::level_0::Level0)?
         .with_resource(NetParams {
             is_server: is_server,
-            id: 0, // TODO: Use IP or somethivgn
         })
         .build(game_data)?
         ;
@@ -172,35 +169,13 @@ impl Component for Player {
 #[derive(Clone)]
 pub struct NetParams {
     pub is_server: bool,
-    // TODO: How do we turn IP to a u32?
-    // a net id
-    pub id: u32,
-}
-
-// Everything that could be sent is in this enum
-#[derive(PartialEq, Clone, Serialize, Deserialize)]
-pub enum UpdateEvent {
-    Server(ServerEvent),
-    Client(ClientEvent),
 }
 
 // Sent every frame by the server to update on the state of the world
 #[derive(PartialEq, Clone, Serialize, Deserialize)]
-pub struct ServerEvent {
+pub struct UpdateEvent {
     pub frame: u64,
-    // u32 = net_id
-    pub tfs: HashMap<u32, TFEvent>,
-}
-
-// Sent every frame by the server to update on the state of the world
-#[derive(PartialEq, Clone, Serialize, Deserialize)]
-pub struct ClientEvent {
-    pub frame: u64,
-    pub id: u32,
-    pub left: bool,
-    pub right: bool,
-    pub up: bool,
-    pub down: bool,
+    pub tf: TFEvent,
 }
 
 #[derive(PartialEq, Clone, Serialize, Deserialize)]

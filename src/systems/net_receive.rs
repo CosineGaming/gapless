@@ -1,30 +1,31 @@
 use amethyst::{
-    ecs::{Join, ReaderId, System, ReadStorage, WriteStorage},
+    ecs::{Join, ReaderId, System, ReadStorage, WriteStorage, ReadExpect},
     network::*,
     core::nalgebra::{Vector3},
     core::Transform,
 };
 
-use {Player, UpdateEvent, ServerEvent};
+use {Player, UpdateEvent, NetParams};
 
 /// A simple system that receives a ton of network events.
-pub struct ClientReceive {
+pub struct NetReceive {
     pub reader: Option<ReaderId<NetEvent<UpdateEvent>>>,
 }
 
-impl ClientReceive {
+impl NetReceive {
     pub fn new() -> Self {
-        ClientReceive { reader: None }
+        NetReceive { reader: None }
     }
 }
 
-impl<'a> System<'a> for ClientReceive {
+impl<'a> System<'a> for NetReceive {
     type SystemData = (
         WriteStorage<'a, NetConnection<UpdateEvent>>,
         WriteStorage<'a, Transform>,
         ReadStorage<'a, Player>,
+        ReadExpect<'a, NetParams>,
     );
-    fn run(&mut self, (mut connections, mut transforms, players): Self::SystemData) {
+    fn run(&mut self, (mut connections, mut transforms, players, net_params): Self::SystemData) {
         for (mut conn,) in (&mut connections,).join() {
             if self.reader.is_none() {
                 self.reader = Some(conn.receive_buffer.register_reader());
@@ -33,11 +34,7 @@ impl<'a> System<'a> for ClientReceive {
                 .filter_map(|ev| {
                     // TODO: match
                     if let NetEvent::Custom(event) = ev {
-                        if let UpdateEvent::Server(server_event) = event {
-                            Some(server_event)
-                        } else {
-                            None
-                        }
+                        Some(event)
                     } else {
                         None
                     }
@@ -47,8 +44,8 @@ impl<'a> System<'a> for ClientReceive {
                     if acc.frame > ev.frame { acc } else { ev }
                 });
                 for (player, mut transform) in (&players, &mut transforms).join() {
-                    if let Some(tf) = recent.tfs.get(&player.is_server) {
-                        let pos = tf.position;
+                    if net_params.is_server != player.is_server {
+                        let pos = recent.tf.position;
                         transform.set_xyz(pos.x, pos.y, 0.0);
                     }
                 }
