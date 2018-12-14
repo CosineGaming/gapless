@@ -42,7 +42,11 @@ fn main() -> amethyst::Result<()> {
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
-            .with_pass(DrawFlat2D::new()) // TODO: Add transparency pass
+            .with_pass(DrawFlat2D::new().with_transparency(
+                ColorMask::all(),
+                ALPHA,
+                Some(DepthMode::LessEqualWrite),
+            ))
     );
 
     let binding_path = "./resources/bindings_config.ron";
@@ -70,7 +74,6 @@ fn main() -> amethyst::Result<()> {
             ))?
     } else {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
-                // "127.0.0.1:3455".parse().unwrap(),
                 "0.0.0.0:0".parse().unwrap(),
                 vec![],
             ))?
