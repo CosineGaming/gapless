@@ -1,11 +1,9 @@
 use amethyst::core::{Transform, Time};
 use amethyst::core::nalgebra::Vector2;
-use amethyst::ecs::{Join, Read, Write, ReadExpect, ReadStorage, System, WriteStorage};
+use amethyst::ecs::prelude::*;
 use amethyst::network::{NetConnection, NetEvent};
-use amethyst::input::InputHandler;
-use amethyst::shrev::EventChannel;
 
-use {UpdateEvent, Player, NetParams, GAME_WIDTH, GAME_HEIGHT, TFEvent};
+use {UpdateEvent, Player, NetParams, TFEvent};
 
 pub struct NetUpdate;
 

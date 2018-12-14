@@ -1,11 +1,9 @@
 use amethyst::core::Transform;
 use amethyst::core::nalgebra::{Vector3, normalize};
 use amethyst::ecs::prelude::*;
-use amethyst::ecs::{Join, Read, ReadExpect, ReadStorage, System, WriteStorage, ReaderId, Resources};
 use amethyst::input::InputHandler;
-use amethyst::shrev::EventChannel;
 
-use {UpdateEvent, Player, NetParams, GAME_WIDTH, GAME_HEIGHT};
+use {Player, NetParams};
 
 pub struct PlayerSystem;
 

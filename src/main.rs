@@ -9,13 +9,11 @@ use amethyst::{
     ecs::prelude::*,
     core::{TransformBundle, transform::Transform},
     input::InputBundle,
-    core::nalgebra::{Vector3, Vector2},
+    core::nalgebra::{Vector2},
     assets::{AssetStorage, Loader},
     utils::{application_root_dir, ortho_camera::*},
-    network::{NetConnection, NetworkBundle, NetEvent},
+    network::{NetConnection, NetworkBundle},
 };
-
-use std::collections::HashMap;
 
 mod states;
 mod systems;

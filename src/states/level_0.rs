@@ -1,11 +1,8 @@
 use amethyst::{
     prelude::*,
-    core::{Transform},
-    ecs::{Entity},
-    renderer::{TextureHandle, Texture},
 };
 
-use {load_texture, init_camera, GAME_WIDTH, GAME_HEIGHT, init_image, init_net, init_player};
+use {load_texture, init_camera, init_image, init_net, init_player};
 
 pub struct Level0;
 

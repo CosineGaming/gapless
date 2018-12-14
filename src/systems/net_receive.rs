@@ -1,7 +1,6 @@
 use amethyst::{
     ecs::{Join, ReaderId, System, ReadStorage, WriteStorage, ReadExpect},
     network::*,
-    core::nalgebra::{Vector3},
     core::Transform,
 };
 
