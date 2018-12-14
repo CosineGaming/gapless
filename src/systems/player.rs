@@ -1,5 +1,5 @@
 use amethyst::core::Transform;
-use amethyst::core::nalgebra::Vector3;
+use amethyst::core::nalgebra::{Vector3, normalize};
 use amethyst::ecs::prelude::*;
 use amethyst::ecs::{Join, Read, ReadExpect, ReadStorage, System, WriteStorage, ReaderId, Resources};
 use amethyst::input::InputHandler;
@@ -27,7 +27,7 @@ impl<'s> System<'s> for PlayerSystem {
         for (player, transform) in (&players, &mut transforms).join() {
             // only move our own player
             if player.is_server == net_params.is_server {
-                let mut movement = Vector3::new(0.0, 0.0, 0.0);
+                let mut movement = Vector3::zeros();
                 if input.action_is_down("right").unwrap() {
                     movement.x += 1.0;
                 }
@@ -40,7 +40,9 @@ impl<'s> System<'s> for PlayerSystem {
                 if input.action_is_down("down").unwrap() {
                     movement.y -= 1.0;
                 }
-                let movement = movement * 2.0;
+                if movement != Vector3::zeros() {
+                    movement = normalize(&movement) * 2.5;
+                }
                 transform.move_global(movement);
                 // TODO: Framerate dependent????
                 // TODO: Edges of screen / collisions / etc / make a game lol
