@@ -13,6 +13,7 @@ use amethyst::{
     assets::{AssetStorage, Loader},
     utils::{application_root_dir, ortho_camera::*},
     network::{NetConnection, NetworkBundle},
+    ui::{DrawUi, UiBundle},
 };
 
 mod states;
@@ -45,6 +46,7 @@ fn main() -> amethyst::Result<()> {
                 ALPHA,
                 Some(DepthMode::LessEqualWrite),
             ))
+            .with_pass(DrawUi::new())
     );
 
     let binding_path = "./resources/bindings_config.ron";
@@ -56,6 +58,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
+        .with_bundle(UiBundle::<String, String>::new())?
         .with(CameraOrthoSystem::default(), "letterbox", &[])
         .with(systems::player::PlayerSystem::new(), "player", &["input_system"])
         .with(systems::net_update::NetUpdate, "net_update", &[])
@@ -77,7 +80,7 @@ fn main() -> amethyst::Result<()> {
             ))?
     };
 
-    let mut game = Application::build("./", states::level_0::Level0)?
+    let mut game = Application::build("./", states::menu::Menu)?
         .with_resource(NetParams {
             is_server: is_server,
         })
