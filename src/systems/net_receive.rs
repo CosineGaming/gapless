@@ -4,7 +4,7 @@ use amethyst::{
     core::Transform,
 };
 
-use {Player, UpdateEvent, NetParams};
+use crate::{Player, UpdateEvent, NetParams};
 
 /// A simple system that receives a ton of network events.
 pub struct NetReceive {

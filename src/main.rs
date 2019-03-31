@@ -102,7 +102,7 @@ fn init_camera(world: &mut World) {
         .build();
 }
 
-fn init_net(world: &mut World) {
+fn init_net(_world: &mut World) {
     //let net_params = world.read_resource::<NetParams>().clone();
     //if !net_params.is_server {
         //world

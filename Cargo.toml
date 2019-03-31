@@ -2,7 +2,7 @@
 name = "gapless"
 version = "0.1.0"
 authors = []
-#edition = "2018"
+edition = "2018"
 
 [dependencies]
 amethyst = { path = "src/amethyst", features = ["nightly"] }

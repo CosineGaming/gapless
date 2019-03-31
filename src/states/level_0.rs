@@ -2,7 +2,7 @@ use amethyst::{
     prelude::*,
 };
 
-use {load_texture, init_camera, init_image, init_net, init_player};
+use crate::{load_texture, init_camera, init_image, init_net, init_player};
 
 pub struct Level0;
 

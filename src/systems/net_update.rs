@@ -3,7 +3,7 @@ use amethyst::core::math::Vector2;
 use amethyst::ecs::prelude::*;
 use amethyst::network::{NetConnection, NetEvent};
 
-use {UpdateEvent, Player, NetParams, TFEvent};
+use crate::{UpdateEvent, Player, NetParams, TFEvent};
 
 pub struct NetUpdate;
 

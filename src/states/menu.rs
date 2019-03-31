@@ -5,7 +5,7 @@ use amethyst::{
     renderer::{TextureHandle, Texture},
 };
 
-use {load_texture, init_camera, GAME_WIDTH, GAME_HEIGHT};
+use crate::{load_texture, init_camera, GAME_WIDTH, GAME_HEIGHT};
 
 pub struct Menu;
 
