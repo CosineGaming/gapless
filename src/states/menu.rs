@@ -2,7 +2,7 @@ use amethyst::{
     prelude::*,
     core::{Transform},
     ecs::{Entity},
-    renderer::{TextureHandle, Texture},
+    renderer::{TextureHandle},
 };
 
 use crate::{load_texture, init_camera, GAME_WIDTH, GAME_HEIGHT};

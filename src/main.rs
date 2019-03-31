@@ -102,14 +102,14 @@ fn init_camera(world: &mut World) {
         .build();
 }
 
-fn init_net(_world: &mut World) {
-    //let net_params = world.read_resource::<NetParams>().clone();
-    //if !net_params.is_server {
-        //world
-            //.create_entity()
-            //.with(NetConnection::<UpdateEvent>::new("127.0.0.1:3456".parse().unwrap()))
-            //.build();
-    //}
+fn init_net(world: &mut World) {
+    let net_params = world.read_resource::<NetParams>().clone();
+    if !net_params.is_server {
+        world
+            .create_entity()
+            .with(NetConnection::<UpdateEvent>::new("127.0.0.1:3456".parse().unwrap(), "127.0.0.1:3457".parse().unwrap()))
+            .build();
+    }
 }
 
 fn init_image(world: &mut World, texture: &TextureHandle) -> Entity {
@@ -139,7 +139,7 @@ fn load_sprite_sheet(world: &mut World, ron_path: &str, png_path: &str) -> Sprit
     let loader = world.read_resource::<Loader>();
     let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
     loader.load(
-	    ron_path,
+	    format!("resources/{}", ron_path),
 	    SpriteSheetFormat,
 	    texture_handle,
 	    (),
@@ -148,15 +148,19 @@ fn load_sprite_sheet(world: &mut World, ron_path: &str, png_path: &str) -> Sprit
 }
 
 fn init_player(world: &mut World, is_server: bool) -> Entity {
-    let mut transform = Transform::default();
     let tex = load_texture(world, "player.png");
-    let stick = load_sprite_sheet(world, "./resources/stick_ss.ron", "stick.png");
+    let stick = load_sprite_sheet(world, "stick.ron", "stick.png");
     let stick_render = SpriteRender {
 	    sprite_sheet: stick,
 	    sprite_number: 0,
     };
+    let mut transform = Transform::default();
     transform.set_translation_x(GAME_WIDTH/2.0);
     transform.set_translation_y(GAME_HEIGHT/2.0);
+    world.create_entity()
+        .with(Transform::default())
+        .with(stick_render.clone())
+        .build();
     world.create_entity()
         .with(Player::new(is_server)) // TODO: id
         .with(transform)
