@@ -1,9 +1,9 @@
 use amethyst::core::Transform;
-use amethyst::core::nalgebra::{Vector3, normalize};
+use amethyst::core::math::{Vector3, normalize};
 use amethyst::ecs::prelude::*;
 use amethyst::input::InputHandler;
 
-use {Player, NetParams};
+use crate::{Player, NetParams};
 
 pub struct PlayerSystem;
 
@@ -41,7 +41,7 @@ impl<'s> System<'s> for PlayerSystem {
                 if movement != Vector3::zeros() {
                     movement = normalize(&movement) * 2.5;
                 }
-                transform.move_global(movement);
+                transform.prepend_translation(movement);
                 // TODO: Framerate dependent????
                 // TODO: Edges of screen / collisions / etc / make a game lol
                 // let scaled_amount = 1.2 * mv_amount as f32;

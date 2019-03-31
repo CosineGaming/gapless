@@ -1,6 +1,6 @@
 use amethyst::{
     ecs::{Join, Read, ReadExpect, System, ReadStorage, WriteStorage},
-    core::nalgebra::{Vector2, Vector3},
+    core::math::{Vector2, Vector3},
     network::*,
     core::*,
 };

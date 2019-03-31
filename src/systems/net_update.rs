@@ -1,5 +1,5 @@
 use amethyst::core::{Transform, Time};
-use amethyst::core::nalgebra::Vector2;
+use amethyst::core::math::Vector2;
 use amethyst::ecs::prelude::*;
 use amethyst::network::{NetConnection, NetEvent};
 

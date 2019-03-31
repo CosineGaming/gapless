@@ -1,6 +1,5 @@
 extern crate amethyst;
 #[macro_use]
-extern crate serde_derive;
 extern crate serde;
 
 use amethyst::{
@@ -9,9 +8,9 @@ use amethyst::{
     ecs::prelude::*,
     core::{TransformBundle, transform::Transform},
     input::InputBundle,
-    core::nalgebra::{Vector2},
+    core::math::{Vector2},
     assets::{AssetStorage, Loader},
-    utils::{application_root_dir, ortho_camera::*},
+    utils::{application_dir, ortho_camera::*},
     network::{NetConnection, NetworkBundle},
 };
 
@@ -28,23 +27,17 @@ fn main() -> amethyst::Result<()> {
         stdout: amethyst::StdoutLog::Colored,
         level_filter: amethyst::LogLevelFilter::Warn,
         log_file: None,
-        allow_env_override: true
+        allow_env_override: true,
+        log_gfx_device_level: None,
     });
 
-    let path = format!(
-        "{}/resources/display_config.ron",
-        application_root_dir()
-    );
+    let path = application_dir("resources/display_config.ron")?;
     let config = DisplayConfig::load(&path);
 
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
-            .with_pass(DrawFlat2D::new().with_transparency(
-                ColorMask::all(),
-                ALPHA,
-                Some(DepthMode::LessEqualWrite),
-            ))
+            .with_pass(DrawFlat2D::new())
     );
 
     let binding_path = "./resources/bindings_config.ron";
@@ -68,11 +61,13 @@ fn main() -> amethyst::Result<()> {
     let game_data = if is_server {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
                 "127.0.0.1:3456".parse().unwrap(),
+                "127.0.0.1:3457".parse().unwrap(),
                 vec![],
             ))?
     } else {
         game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
-                "0.0.0.0:0".parse().unwrap(),
+                "0.0.0.0:3456".parse().unwrap(),
+                "0.0.0.0:3457".parse().unwrap(),
                 vec![],
             ))?
     };
@@ -91,36 +86,36 @@ fn main() -> amethyst::Result<()> {
 
 fn init_camera(world: &mut World) {
     let mut transform = Transform::default();
-    transform.set_z(1.0);
+    transform.set_translation_z(1.0);
+    let mut ortho = CameraOrtho::default();
+    ortho.mode = CameraNormalizeMode::Contain;
+    ortho.world_coordinates = CameraOrthoWorldCoordinates {
+        left: 0.0,
+        top: GAME_HEIGHT,
+        right: GAME_WIDTH,
+        bottom: 0.0,
+    };
     world.create_entity()
-        .with(CameraOrtho {
-            mode: CameraNormalizeMode::Contain,
-            world_coordinates: CameraOrthoWorldCoordinates {
-                left: 0.0,
-                top: GAME_HEIGHT,
-                right: GAME_WIDTH,
-                bottom: 0.0,
-            }
-        })
+        .with(ortho)
         .with(Camera::standard_2d())
         .with(transform)
         .build();
 }
 
 fn init_net(world: &mut World) {
-    let net_params = world.read_resource::<NetParams>().clone();
-    if !net_params.is_server {
-        world
-            .create_entity()
-            .with(NetConnection::<UpdateEvent>::new("127.0.0.1:3456".parse().unwrap()))
-            .build();
-    }
+    //let net_params = world.read_resource::<NetParams>().clone();
+    //if !net_params.is_server {
+        //world
+            //.create_entity()
+            //.with(NetConnection::<UpdateEvent>::new("127.0.0.1:3456".parse().unwrap()))
+            //.build();
+    //}
 }
 
 fn init_image(world: &mut World, texture: &TextureHandle) -> Entity {
     let mut transform = Transform::default();
-    transform.set_x(GAME_WIDTH/2.0);
-    transform.set_y(GAME_HEIGHT/2.0);
+    transform.set_translation_x(GAME_WIDTH/2.0);
+    transform.set_translation_y(GAME_HEIGHT/2.0);
     world.create_entity()
         .with(transform)
         .with(texture.clone())
@@ -139,14 +134,34 @@ fn load_texture(world: &mut World, png_path: &str) -> TextureHandle {
     )
 }
 
-fn init_player(world: &mut World, texture: &TextureHandle, is_server: bool) -> Entity {
+fn load_sprite_sheet(world: &mut World, ron_path: &str, png_path: &str) -> SpriteSheetHandle {
+	let texture_handle = load_texture(world, png_path);
+    let loader = world.read_resource::<Loader>();
+    let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
+    loader.load(
+	    ron_path,
+	    SpriteSheetFormat,
+	    texture_handle,
+	    (),
+	    &sprite_sheet_store,
+   )
+}
+
+fn init_player(world: &mut World, is_server: bool) -> Entity {
     let mut transform = Transform::default();
-    transform.set_x(GAME_WIDTH/2.0);
-    transform.set_y(GAME_HEIGHT/2.0);
+    let tex = load_texture(world, "player.png");
+    let stick = load_sprite_sheet(world, "./resources/stick_ss.ron", "stick.png");
+    let stick_render = SpriteRender {
+	    sprite_sheet: stick,
+	    sprite_number: 0,
+    };
+    transform.set_translation_x(GAME_WIDTH/2.0);
+    transform.set_translation_y(GAME_HEIGHT/2.0);
     world.create_entity()
         .with(Player::new(is_server)) // TODO: id
         .with(transform)
-        .with(texture.clone())
+        .with(tex)
+        .with(stick_render)
         .build()
 }
 

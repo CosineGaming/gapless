@@ -45,7 +45,7 @@ impl<'a> System<'a> for NetReceive {
                 for (player, mut transform) in (&players, &mut transforms).join() {
                     if net_params.is_server != player.is_server {
                         let pos = recent.tf.position;
-                        transform.set_xyz(pos.x, pos.y, 0.0);
+                        transform.set_translation_xyz(pos.x, pos.y, 0.0);
                     }
                 }
             }

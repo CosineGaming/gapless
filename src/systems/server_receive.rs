@@ -3,7 +3,7 @@ use amethyst::{
     network::*,
     assets::{AssetStorage, Loader},
     renderer::{TextureMetadata, Texture, TextureHandle, PngFormat},
-    core::nalgebra::{Vector3},
+    core::math::{Vector3},
     core::Transform,
     shrev::EventChannel,
 };
