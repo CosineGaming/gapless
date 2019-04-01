@@ -25,7 +25,7 @@ impl<'a> System<'a> for NetReceive {
         ReadExpect<'a, NetParams>,
     );
     fn run(&mut self, (mut connections, mut transforms, players, net_params): Self::SystemData) {
-        for (mut conn,) in (&mut connections,).join() {
+        for (conn,) in (&mut connections,).join() {
             if self.reader.is_none() {
                 self.reader = Some(conn.receive_buffer.register_reader());
             }
@@ -42,7 +42,7 @@ impl<'a> System<'a> for NetReceive {
                 let recent = iter.fold(first, |acc, ev| {
                     if acc.frame > ev.frame { acc } else { ev }
                 });
-                for (player, mut transform) in (&players, &mut transforms).join() {
+                for (player, transform) in (&players, &mut transforms).join() {
                     if net_params.is_server != player.is_server {
                         let pos = recent.tf.position;
                         transform.set_translation_xyz(pos.x, pos.y, 0.0);

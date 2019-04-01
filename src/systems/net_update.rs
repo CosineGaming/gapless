@@ -28,7 +28,7 @@ impl<'s> System<'s> for NetUpdate {
                     },
                 };
                 let update_event = NetEvent::Custom(update_event);
-                for mut conn in (&mut connections).join() {
+                for conn in (&mut connections).join() {
                     conn.send_buffer.single_write(update_event.clone());
                 }
             }

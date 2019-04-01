@@ -3,7 +3,7 @@ use amethyst::ecs::Join;
 use amethyst::renderer::SpriteRender;
 use amethyst::core::Transform;
 
-use crate::{Ability, Player};
+use crate::Ability;
 
 pub struct AbilitySystem;
 

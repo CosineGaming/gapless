@@ -145,7 +145,7 @@ fn load_sprite_sheet(world: &mut World, ron_path: &str, png_path: &str) -> Sprit
         texture_handle,
         (),
         &sprite_sheet_store,
-   )
+    )
 }
 
 fn init_player(world: &mut World, is_server: bool) {

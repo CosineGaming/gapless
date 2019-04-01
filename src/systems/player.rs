@@ -1,5 +1,5 @@
 use amethyst::core::Transform;
-use amethyst::core::math::{Vector3, normalize};
+use amethyst::core::math::Vector3;
 use amethyst::ecs::prelude::*;
 use amethyst::input::InputHandler;
 
@@ -39,7 +39,7 @@ impl<'s> System<'s> for PlayerSystem {
                     movement.y -= 1.0;
                 }
                 if movement != Vector3::zeros() {
-                    movement = normalize(&movement) * 2.5;
+                    movement = movement.normalize() * 2.5;
                 }
                 transform.prepend_translation(movement);
                 // TODO: Framerate dependent????
