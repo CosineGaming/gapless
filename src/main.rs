@@ -51,6 +51,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with(CameraOrthoSystem::default(), "letterbox", &[])
         .with(systems::player::PlayerSystem::new(), "player", &["input_system"])
+        .with(systems::ability::AbilitySystem::new(), "ability", &[])
         .with(systems::net_update::NetUpdate, "net_update", &[])
         .with(systems::net_receive::NetReceive::new(), "net_receive", &["player"]) // TODO: do this after NetworkBundle
         ;
@@ -135,54 +136,74 @@ fn load_texture(world: &mut World, png_path: &str) -> TextureHandle {
 }
 
 fn load_sprite_sheet(world: &mut World, ron_path: &str, png_path: &str) -> SpriteSheetHandle {
-	let texture_handle = load_texture(world, png_path);
+    let texture_handle = load_texture(world, png_path);
     let loader = world.read_resource::<Loader>();
     let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
     loader.load(
-	    format!("resources/{}", ron_path),
-	    SpriteSheetFormat,
-	    texture_handle,
-	    (),
-	    &sprite_sheet_store,
+        format!("resources/{}", ron_path),
+        SpriteSheetFormat,
+        texture_handle,
+        (),
+        &sprite_sheet_store,
    )
 }
 
-fn init_player(world: &mut World, is_server: bool) -> Entity {
+fn init_player(world: &mut World, is_server: bool) {
     let tex = load_texture(world, "player.png");
     let stick = load_sprite_sheet(world, "stick.ron", "stick.png");
     let stick_render = SpriteRender {
-	    sprite_sheet: stick,
-	    sprite_number: 0,
+        sprite_sheet: stick,
+        sprite_number: 0,
     };
     let mut transform = Transform::default();
     transform.set_translation_x(GAME_WIDTH/2.0);
     transform.set_translation_y(GAME_HEIGHT/2.0);
-    world.create_entity()
-        .with(Transform::default())
-        .with(stick_render.clone())
-        .build();
-    world.create_entity()
+    let player = world.create_entity()
         .with(Player::new(is_server)) // TODO: id
-        .with(transform)
+        .with(transform.clone())
         .with(tex)
+        .build();
+    // The primary attack abilities have a usize power that goes up and down
+    // q, w, e, r: attacks
+    world.create_entity()
+        .with(Ability::new(player, 3))
         .with(stick_render)
-        .build()
+        .with(transform)
+        .build();
 }
 
 pub struct Player {
     pub is_server: bool,
 }
-
+impl Component for Player {
+    type Storage = DenseVecStorage<Self>;
+}
 impl Player {
     fn new(is_server: bool) -> Self {
         Player {
-            is_server // IS THIS POSSBLIE? LOLO
+            is_server,
         }
     }
 }
 
-impl Component for Player {
+pub struct Ability {
+    pub target: Entity,
+    pub count: usize,
+    pub max: usize,
+    pub direction: i8,
+}
+impl Component for Ability {
     type Storage = DenseVecStorage<Self>;
+}
+impl Ability {
+    fn new(target: Entity, max: usize) -> Self {
+        Self {
+            target,
+            count: 0,
+            max,
+            direction: 1,
+        }
+    }
 }
 
 // This should probly be in different file but
