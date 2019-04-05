@@ -1,9 +1,10 @@
 use amethyst::{
     ecs::prelude::*,
     network::*,
+    shrev::EventChannel,
 };
 
-use crate::{Player, UpdateEvent, NetParams};
+use crate::UpdateEvent;
 
 /// A simple system that receives a ton of network events.
 pub struct NetReceive {
@@ -19,34 +20,28 @@ impl NetReceive {
 impl<'a> System<'a> for NetReceive {
     type SystemData = (
         WriteStorage<'a, NetConnection<UpdateEvent>>,
-        WriteStorage<'a, Transform>,
-        ReadStorage<'a, Player>,
-        ReadExpect<'a, NetParams>,
+        Write<'a, EventChannel<UpdateEvent>>,
     );
-    fn run(&mut self, (mut connections, mut transforms, players, net_params): Self::SystemData) {
+    fn run(&mut self, (mut connections, mut events): Self::SystemData) {
         for (conn,) in (&mut connections,).join() {
-            if self.reader.is_none() {
-                self.reader = Some(conn.receive_buffer.register_reader());
-            }
-            let mut iter = conn.receive_buffer.read(self.reader.as_mut().unwrap())
-                .filter_map(|ev| {
-                    // TODO: match
-                    if let NetEvent::Custom(event) = ev {
-                        Some(event)
-                    } else {
-                        None
-                    }
-                });
-            if let Some(first) = iter.next() {
-                let recent = iter.fold(first, |acc, ev| {
-                    if acc.frame > ev.frame { acc } else { ev }
-                });
-                for (player, transform) in (&players, &mut transforms).join() {
-                    if net_params.is_server != player.is_server {
-                        let pos = recent.tf.position;
-                        transform.set_translation_xyz(pos.x, pos.y, 0.0);
-                    }
+	        if self.reader.is_none() {
+		        self.reader = Some(conn.receive_buffer.register_reader());
+	        }
+            let mut tf_recent: Option<UpdateEvent> = None;
+            for ev in conn.receive_buffer.read(self.reader.as_mut().unwrap()) {
+                match ev {
+                    NetEvent::Custom(event) => {
+                        if tf_recent == None || tf_recent.as_ref().unwrap().frame < event.frame {
+                            tf_recent = Some(event.clone());
+                        }
+                        // TODO: uncomment this line for reliable events
+                        //events.single_write(event.clone());
+                    },
+                    _ => {}
                 }
+            }
+            if let Some(event) = tf_recent {
+                events.single_write(event.clone());
             }
         }
     }
