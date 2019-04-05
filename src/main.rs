@@ -166,7 +166,7 @@ fn init_player(world: &mut World, is_server: bool) {
     // The primary attack abilities have a usize power that goes up and down
     // q, w, e, r: attacks
     world.create_entity()
-        .with(Ability::new(player, 3))
+        .with(Ability::new(player, 1., 4))
         .with(stick_render)
         .with(transform)
         .build();
@@ -187,20 +187,27 @@ impl Player {
 }
 
 pub struct Ability {
+	// The player this ability belongs to
     pub target: Entity,
-    pub count: usize,
-    pub max: usize,
-    pub direction: i8,
+    // The seconds it takes to reach max power
+    pub freq: f32,
+    // The number of frames in the animation
+    pub frames: usize,
+    // Current seconds count
+    count: f32,
+    // Currently going up or down?
+    direction: i8,
 }
 impl Component for Ability {
     type Storage = DenseVecStorage<Self>;
 }
 impl Ability {
-    fn new(target: Entity, max: usize) -> Self {
+    fn new(target: Entity, freq: f32, frames: usize) -> Self {
         Self {
             target,
-            count: 0,
-            max,
+            count: 0.,
+            frames,
+            freq,
             direction: 1,
         }
     }
