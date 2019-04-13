@@ -27,7 +27,7 @@ impl<'s> System<'s> for NetUpdate {
                         velocity: Vector2::new(0.0, 0.0), // TODO: implement
                     },
                 };
-                let update_event = NetEvent::Custom(update_event);
+                let update_event = NetEvent::Unreliable(update_event);
                 for conn in (&mut connections).join() {
                     conn.send_buffer.single_write(update_event.clone());
                 }

@@ -30,14 +30,16 @@ impl<'a> System<'a> for NetReceive {
             let mut tf_recent: Option<UpdateEvent> = None;
             for ev in conn.receive_buffer.read(self.reader.as_mut().unwrap()) {
                 match ev {
-                    NetEvent::Custom(event) => {
+                    NetEvent::Unreliable(event) => {
+		                // All our unreliable events are updates, we only need the most recent one
                         if tf_recent == None || tf_recent.as_ref().unwrap().frame < event.frame {
                             tf_recent = Some(event.clone());
                         }
-                        // TODO: uncomment this line for reliable events
-                        //events.single_write(event.clone());
                     },
-                    _ => {}
+                    NetEvent::Reliable(event) => {
+                        events.single_write(event.clone());
+                    },
+                    _ => panic!("unexpected NetEvent unhandled!"),
                 }
             }
             if let Some(event) = tf_recent {
