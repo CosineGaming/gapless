@@ -4,7 +4,7 @@ use amethyst::{
     core::Transform,
 };
 
-use crate::UpdateEvent;
+use crate::{Player, UpdateEvent, NetParams};
 
 /// A simple system that receives a ton of network events.
 pub struct NetReceive {
@@ -20,9 +20,11 @@ impl NetReceive {
 impl<'a> System<'a> for NetReceive {
     type SystemData = (
         WriteStorage<'a, NetConnection<UpdateEvent>>,
-        Write<'a, EventChannel<UpdateEvent>>,
+        WriteStorage<'a, Transform>,
+        ReadStorage<'a, Player>,
+        ReadExpect<'a, NetParams>,
     );
-    fn run(&mut self, (mut connections, mut events): Self::SystemData) {
+    fn run(&mut self, (mut connections, mut transforms, players, net_params): Self::SystemData) {
         for (conn,) in (&mut connections,).join() {
 	        if self.reader.is_none() {
 		        self.reader = Some(conn.receive_buffer.register_reader());
@@ -37,13 +39,21 @@ impl<'a> System<'a> for NetReceive {
                         }
                     },
                     NetEvent::Reliable(event) => {
-                        events.single_write(event.clone());
+	                    // Handle immediately
+	                    match event {
+		                    _ => panic!("no reliable events expected yet"),
+	                    }
                     },
                     _ => panic!("unexpected NetEvent unhandled!"),
                 }
             }
-            if let Some(event) = tf_recent {
-                events.single_write(event.clone());
+            if let Some(tf_recent) = tf_recent {
+	            for (player, transform) in (&players, &mut transforms).join() {
+	                if net_params.is_server != player.is_server {
+	                    let pos = tf_recent.tf.position;
+	                    transform.set_translation_xyz(pos.x, pos.y, 0.0);
+	                }
+	            }
             }
         }
     }
