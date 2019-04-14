@@ -55,7 +55,7 @@ fn main() -> amethyst::Result<()> {
         .with(systems::input::InputSystem {}, "input", &["input_system"])
         .with(systems::ability::AbilitySystem::new(), "ability", &[])
         .with(systems::net_update::NetUpdate, "net_update", &[])
-        .with(systems::net_receive::NetReceive::new(), "net_receive", &["player"]) // TODO: do this after NetworkBundle
+        .with(systems::net_receive::NetReceive::new(), "net_receive", &[]) // TODO: do this after NetworkBundle
         ;
 
     let args: Vec<String> = std::env::args().collect();
