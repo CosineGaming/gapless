@@ -2,20 +2,22 @@ extern crate amethyst;
 #[macro_use]
 extern crate serde;
 
+mod network;
+mod states;
+mod systems;
+
+use network::{CustomNetEvent, NetParams};
+
 use amethyst::{
     prelude::*,
     renderer::*,
     ecs::prelude::*,
     core::{TransformBundle, transform::Transform},
     input::InputBundle,
-    core::math::{Vector2},
     assets::{AssetStorage, Loader},
     utils::{application_dir, ortho_camera::*},
     network::{NetConnection, NetworkBundle},
 };
-
-mod states;
-mod systems;
 
 /// constants
 // this is a pixelly game. the GAME resolution is gonna be 320x180 but it can be whatever size it wants
@@ -50,7 +52,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(input_bundle)?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with(CameraOrthoSystem::default(), "letterbox", &[])
-        .with(systems::player::PlayerSystem::new(), "player", &["input_system"])
+        .with(systems::input::InputSystem {}, "input", &["input_system"])
         .with(systems::ability::AbilitySystem::new(), "ability", &[])
         .with(systems::net_update::NetUpdate, "net_update", &[])
         .with(systems::net_receive::NetReceive::new(), "net_receive", &["player"]) // TODO: do this after NetworkBundle
@@ -60,13 +62,13 @@ fn main() -> amethyst::Result<()> {
     let is_server = if args.len() > 1 { args[1] == "server" } else { false };
     // Bind to the correct port
     let game_data = if is_server {
-        game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
+        game_data.with_bundle(NetworkBundle::<CustomNetEvent>::new(
                 "127.0.0.1:3456".parse().unwrap(),
                 "127.0.0.1:3457".parse().unwrap(),
                 vec![],
             ))?
     } else {
-        game_data.with_bundle(NetworkBundle::<UpdateEvent>::new(
+        game_data.with_bundle(NetworkBundle::<CustomNetEvent>::new(
                 "0.0.0.0:3456".parse().unwrap(),
                 "0.0.0.0:3457".parse().unwrap(),
                 vec![],
@@ -108,7 +110,7 @@ fn init_net(world: &mut World) {
     if !net_params.is_server {
         world
             .create_entity()
-            .with(NetConnection::<UpdateEvent>::new("127.0.0.1:3456".parse().unwrap(), "127.0.0.1:3457".parse().unwrap()))
+            .with(NetConnection::<CustomNetEvent>::new("127.0.0.1:3456".parse().unwrap(), "127.0.0.1:3457".parse().unwrap()))
             .build();
     }
 }
@@ -167,7 +169,7 @@ fn init_player(world: &mut World, is_server: bool) {
     // The primary attack abilities have a usize power that goes up and down
     // q, w, e, r: attacks
     world.create_entity()
-        .with(Ability::new(player, 1., 4))
+        .with(AbilityComp::new(player, AbilityType::ShortRangeDamage))
         .with(stick_render)
         .with(transform)
         .build();
@@ -187,49 +189,49 @@ impl Player {
     }
 }
 
-pub struct Ability {
-	// The player this ability belongs to
-    pub target: Entity,
+#[derive(PartialEq, Clone, Serialize, Deserialize)]
+pub enum AbilityType {
+    ShortRangeDamage,
+}
+
+/// Defines a type of ability and its state
+#[derive(PartialEq, Clone, Serialize, Deserialize)]
+pub struct AbilityState {
+    ability_type: AbilityType,
     // The seconds it takes to reach max power
     pub freq: f32,
-    // The number of frames in the animation
-    pub frames: usize,
     // Current seconds count
     count: f32,
     // Currently going up or down?
     direction: i8,
 }
-impl Component for Ability {
+
+pub struct AbilityComp {
+    // The player this ability belongs to
+    pub target: Entity,
+    // The number of frames in the animation
+    pub frames: usize,
+    // The data of the ability
+    state: AbilityState,
+}
+impl Component for AbilityComp {
     type Storage = DenseVecStorage<Self>;
 }
-impl Ability {
-    fn new(target: Entity, freq: f32, frames: usize) -> Self {
+impl AbilityComp {
+    fn new(target: Entity, ability_type: AbilityType) -> Self {
+	    let (freq, frames) = match ability_type {
+		    AbilityType::ShortRangeDamage => (1., 4),
+	    };
         Self {
             target,
-            count: 0.,
             frames,
-            freq,
-            direction: 1,
+            state: AbilityState {
+                ability_type,
+                freq,
+                count: 0.,
+                direction: 1,
+            }
         }
     }
-}
-
-// This should probly be in different file but
-#[derive(Clone)]
-pub struct NetParams {
-    pub is_server: bool,
-}
-
-// Sent every frame by the server to update on the state of the world
-#[derive(PartialEq, Clone, Serialize, Deserialize)]
-pub struct UpdateEvent {
-    pub frame: u64,
-    pub tf: TFEvent,
-}
-
-#[derive(PartialEq, Clone, Serialize, Deserialize)]
-pub struct TFEvent {
-    pub position: Vector2<f32>,
-    pub velocity: Vector2<f32>,
 }
 
