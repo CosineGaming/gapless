@@ -159,7 +159,8 @@ fn init_player(world: &mut World, is_server: bool) {
     transform.set_translation_x(GAME_WIDTH/2.0);
     transform.set_translation_y(GAME_HEIGHT/2.0);
     let player = world.create_entity()
-        .with(Player::new(is_server)) // TODO: id
+        // TODO: add Owner component, and use that for everything instead player property
+        .with(Player::new(is_server))
         .with(transform.clone())
         .with(tex)
         .build();
