@@ -5,6 +5,7 @@ extern crate serde;
 mod network;
 mod states;
 mod systems;
+mod components;
 
 use network::{CustomNetEvent, NetParams};
 
@@ -55,7 +56,8 @@ fn main() -> amethyst::Result<()> {
         .with(systems::input::InputSystem {}, "input", &["input_system"])
         .with(systems::ability::AbilitySystem::new(), "ability", &[])
         .with(systems::net_update::NetUpdate, "net_update", &[])
-        .with(systems::net_receive::NetReceive::new(), "net_receive", &[]) // TODO: do this after NetworkBundle
+        .with(systems::net_receive::NetReceive::default(), "net_receive", &[]) // TODO: do this after NetworkBundle
+        .with(systems::player_move::MoveSystem::default(), "move", &["input", "net_receive"])
         ;
 
     let args: Vec<String> = std::env::args().collect();

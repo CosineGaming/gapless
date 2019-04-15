@@ -1,21 +1,21 @@
 use amethyst::{
-    ecs::{Join, ReaderId, System, ReadStorage, WriteStorage, ReadExpect},
+    ecs::prelude::*,
     network::*,
-    core::Transform,
-    core::math::Vector3,
+    core::{Transform, Time},
 };
+use std::collections::HashMap;
 
-use crate::{Player, network::*};
+use crate::{Player, network::*, components::ordered_input::*};
+
+// In frames. ~100ms
+static INPUT_LAG: u64 = 6;
 
 /// A simple system that receives a ton of network events.
+#[derive(Default)]
 pub struct NetReceive {
     pub reader: Option<ReaderId<NetEvent<CustomNetEvent>>>,
-}
-
-impl NetReceive {
-    pub fn new() -> Self {
-        NetReceive { reader: None }
-    }
+    // Maps frame to input frame
+    input_buffer: HashMap<u64, OwnedInput>,
 }
 
 impl<'a> System<'a> for NetReceive {
@@ -23,15 +23,18 @@ impl<'a> System<'a> for NetReceive {
         WriteStorage<'a, NetConnection<CustomNetEvent>>,
         WriteStorage<'a, Transform>,
         ReadStorage<'a, Player>,
+        Write<'a, OrderedInput>,
         ReadExpect<'a, NetParams>,
+        Read<'a, Time>,
     );
-    fn run(&mut self, (mut connections, mut transforms, players, net_params): Self::SystemData) {
+    fn run(&mut self, (mut connections, mut transforms, players, mut out_input, net_params, time): Self::SystemData) {
         for (conn,) in (&mut connections,).join() {
             if self.reader.is_none() {
                 self.reader = Some(conn.receive_buffer.register_reader());
             }
             let mut update_recent: Option<CustomNetEvent> = None;
             for ev in conn.receive_buffer.read(self.reader.as_mut().unwrap()) {
+                // Nab the event
                 match ev {
                     NetEvent::Unreliable(event) => {
                         // All our unreliable events are updates, we only need the most recent one
@@ -40,14 +43,13 @@ impl<'a> System<'a> for NetReceive {
                         }
                     },
                     NetEvent::Reliable(event) => {
+                        // Our reliable events are input data, which we'll store in the buffer for later
                         match &event.event {
                             AnyEvent::Input(e) => {
-                                for (player, transform) in (&players, &mut transforms).join() {
-                                    if player.is_server == event.from_server {
-                                        let movement = get_movement(e.clone()); // TODO: there should def be a way to not have to clone this
-                                        transform.prepend_translation(movement);
-                                    }
-                                }
+                                self.input_buffer.insert(event.frame, OwnedInput {
+                                    input: e.clone(),
+                                    is_server: event.from_server,
+                                });
                             }
                             _ => panic!("non-reliable InputEvent found")
                         }
@@ -55,6 +57,7 @@ impl<'a> System<'a> for NetReceive {
                     _ => panic!("unexpected NetEvent unhandled!"),
                 }
             }
+            // Now we take the most recent update and update the state
             if let Some(update_recent) = update_recent {
                 if let AnyEvent::Update(update_recent) = update_recent.event {
                     for (player, transform) in (&players, &mut transforms).join() {
@@ -70,34 +73,16 @@ impl<'a> System<'a> for NetReceive {
                 } else { panic!("expected update event in recent, but it wasn't") }
             }
         }
+        // Deal with input buffer
+        let frame = time.frame_number();
+        if frame > INPUT_LAG {
+            let next_frame_number = frame - INPUT_LAG;
+            let maybe_next_frame = self.input_buffer.remove(&next_frame_number);
+            match maybe_next_frame {
+                Some(input) => out_input.single_write(input),
+                None => println!("ERROR: unimplemented: if we don't have a needed frame"),
+            }
+        }
     }
-}
-
-/// TODO: figure out how best to break this into another file
-fn get_movement(input: InputEvent) -> Vector3<f32> {
-    // only move our own player
-    let mut movement = Vector3::zeros();
-    if input.right {
-        movement.x += 1.0;
-    }
-    if input.left {
-        movement.x -= 1.0;
-    }
-    if input.up {
-        movement.y += 1.0;
-    }
-    if input.down {
-        movement.y -= 1.0;
-    }
-    if movement != Vector3::zeros() {
-        movement = movement.normalize() * 2.5;
-    }
-    movement
-    // TODO: Framerate dependent????
-    // TODO: Edges of screen / collisions / etc / make a game lol
-    // let scaled_amount = 1.2 * mv_amount as f32;
-    // transform.translation[1] = (transform.translation[1] + scaled_amount)
-    //     .min(GAME_HEIGHT) // get height and adjust for it
-    //     .max(0); // same
 }
 
