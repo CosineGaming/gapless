@@ -24,16 +24,18 @@ impl<'a> System<'a> for NetReceive {
         WriteStorage<'a, Transform>,
         ReadStorage<'a, Player>,
         Write<'a, OrderedInput>,
-        ReadExpect<'a, NetParams>,
+        WriteExpect<'a, NetParams>,
         Read<'a, Time>,
     );
-    fn run(&mut self, (mut connections, mut transforms, players, mut out_input, net_params, time): Self::SystemData) {
+    fn run(&mut self, (mut connections, mut transforms, players, mut out_input, mut net_params, time): Self::SystemData) {
+        let mut update_recent: Option<CustomNetEvent> = None;
         for (conn,) in (&mut connections,).join() {
             if self.reader.is_none() {
                 self.reader = Some(conn.receive_buffer.register_reader());
+                net_params.first_frame = time.frame_number();
             }
-            let mut update_recent: Option<CustomNetEvent> = None;
             for ev in conn.receive_buffer.read(self.reader.as_mut().unwrap()) {
+                println!("{:?}", ev);
                 // Nab the event
                 match ev {
                     NetEvent::Unreliable(event) => {
@@ -50,6 +52,7 @@ impl<'a> System<'a> for NetReceive {
                                     input: e.clone(),
                                     is_server: event.from_server,
                                 });
+                                println!("recieved {:?} for frame {}", e, event.frame);
                             }
                             _ => panic!("non-reliable InputEvent found")
                         }
@@ -57,24 +60,25 @@ impl<'a> System<'a> for NetReceive {
                     _ => panic!("unexpected NetEvent unhandled!"),
                 }
             }
-            // Now we take the most recent update and update the state
-            if let Some(update_recent) = update_recent {
-                if let AnyEvent::Update(update_recent) = update_recent.event {
-                    for (player, transform) in (&players, &mut transforms).join() {
-                        if net_params.is_server != player.is_server {
-                            let pos = match update_recent {
-                                AnyUpdate::Server(ref e) if !net_params.is_server => e.player_pos,
-                                AnyUpdate::Client(ref e) if net_params.is_server => e.player_pos,
-                                _ => continue, // Our own update
-                            };
-                            transform.set_translation_xyz(pos.x, pos.y, 0.0);
-                        }
+        }
+        // Now we take the most recent update and update the state
+        if let Some(update_recent) = update_recent {
+            if let AnyEvent::Update(update_recent) = update_recent.event {
+                // Update the state to that described in the update
+                for (player, transform) in (&players, &mut transforms).join() {
+                    if net_params.is_server != player.is_server {
+                        let pos = match update_recent {
+                            AnyUpdate::Server(ref e) if !net_params.is_server => e.player_pos,
+                            AnyUpdate::Client(ref e) if net_params.is_server => e.player_pos,
+                            _ => panic!("received our own update"),
+                        };
+                        transform.set_translation_xyz(pos.x, pos.y, 0.0);
                     }
-                } else { panic!("expected update event in recent, but it wasn't") }
-            }
+                }
+            } else { panic!("expected update event in recent, but it wasn't") }
         }
         // Deal with input buffer
-        let frame = time.frame_number();
+        let frame = time.frame_number() - net_params.first_frame;
         if frame > INPUT_LAG {
             let next_frame_number = frame - INPUT_LAG;
             let maybe_next_frame = self.input_buffer.remove(&next_frame_number);

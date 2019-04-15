@@ -28,7 +28,7 @@ impl<'s> System<'s> for InputSystem {
         };
         let net_event = NetEvent::Reliable(CustomNetEvent {
             event: AnyEvent::Input(input_event.clone()),
-            frame: time.frame_number(),
+            frame: time.frame_number() - net_params.first_frame,
             from_server: net_params.is_server,
         });
         for conn in (&mut conns).join() {

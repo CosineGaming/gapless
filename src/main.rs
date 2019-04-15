@@ -78,6 +78,7 @@ fn main() -> amethyst::Result<()> {
     let mut game = Application::build("./", states::level_0::Level0)?
         .with_resource(NetParams {
             is_server: is_server,
+            first_frame: 0,
         })
         .build(game_data)?
         ;
