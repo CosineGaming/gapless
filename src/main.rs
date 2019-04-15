@@ -65,14 +65,12 @@ fn main() -> amethyst::Result<()> {
     // Bind to the correct port
     let game_data = if is_server {
         game_data.with_bundle(NetworkBundle::<CustomNetEvent>::new(
-                "127.0.0.1:3456".parse().unwrap(),
-                "127.0.0.1:3457".parse().unwrap(),
+                "0.0.0.0:3456".parse().unwrap(),
                 vec![],
             ))?
     } else {
         game_data.with_bundle(NetworkBundle::<CustomNetEvent>::new(
-                "0.0.0.0:3456".parse().unwrap(),
-                "0.0.0.0:3457".parse().unwrap(),
+                "0.0.0.0:0".parse().unwrap(),
                 vec![],
             ))?
     };
@@ -112,7 +110,7 @@ fn init_net(world: &mut World) {
     if !net_params.is_server {
         world
             .create_entity()
-            .with(NetConnection::<CustomNetEvent>::new("127.0.0.1:3456".parse().unwrap(), "127.0.0.1:3457".parse().unwrap()))
+            .with(NetConnection::<CustomNetEvent>::new("127.0.0.1:3456".parse().unwrap()))
             .build();
     }
 }
