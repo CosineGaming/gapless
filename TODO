@@ -1,0 +1,15 @@
+- Frametime == Realtime?
+	- System clock OR
+	- RTT / 2 and subtract
+
+- Move Player into components/
+
+- Rewind and replay:
+	- http://www.amethyst.rs/book/master/game-data.html
+	- https://github.com/amethyst/amethyst/pull/1498/files
+	- branch: feature/rewind
+	-	With the custom dispatcher idea, you'd have to register the game logic's systems twice, then rendering, input, etc only in one of them
+		But make sure you're not creating them mid runtime
+		Do it before your game loop
+			- Khionu
+
