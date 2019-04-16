@@ -39,7 +39,7 @@ impl<'s> System<'s> for NetUpdate {
                             player_pos,
                         })
                     };
-                    let frame = time.frame_number();
+                    let frame = time.frame_number() - net_params.first_frame;
                     let update_event = NetEvent::Unreliable(CustomNetEvent {
                         frame,
                         from_server: net_params.is_server,
