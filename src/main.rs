@@ -65,14 +65,14 @@ fn main() -> amethyst::Result<()> {
     // Bind to the correct port
     let game_data = if is_server {
         game_data.with_bundle(NetworkBundle::<CustomNetEvent>::new(
-                "0.0.0.0:3456".parse().unwrap(),
-                vec![],
-            ))?
+            "0.0.0.0:3456".parse().unwrap(),
+            vec![],
+        ))?
     } else {
         game_data.with_bundle(NetworkBundle::<CustomNetEvent>::new(
-                "0.0.0.0:0".parse().unwrap(),
-                vec![],
-            ))?
+            "0.0.0.0:0".parse().unwrap(),
+            vec![],
+        ))?
     };
 
     let mut game = Application::build("./", states::level_0::Level0)?

@@ -38,7 +38,6 @@ impl<'s> System<'s> for AbilitySystem {
 	            state.count += state.direction as f32 * time.delta_seconds();
             }
             sprite.sprite_number = (state.count * ability.frames as f32 / state.freq) as usize;
-            println!("{}", count_to_total(state.count));
 	        let player_tf = transforms.get(ability.target).unwrap();
 	        *transforms.get_mut(entity).unwrap() = player_tf.clone();
         }

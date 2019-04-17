@@ -26,9 +26,10 @@ impl<'s> System<'s> for InputSystem {
             up: input.action_is_down("up").unwrap(),
             down: input.action_is_down("down").unwrap(),
         };
+        let frame = time.frame_number() - net_params.first_frame;
         let net_event = NetEvent::Reliable(CustomNetEvent {
             event: AnyEvent::Input(input_event.clone()),
-            frame: time.frame_number() - net_params.first_frame,
+            frame,
             from_server: net_params.is_server,
         });
         for conn in (&mut conns).join() {
